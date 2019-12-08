@@ -1,9 +1,13 @@
 package org.enterpriseintegration.vertx.tutorial.examples.example01;
 
 import org.enterpriseintegration.vertx.tutorial.examples.ExampleUtil;
+import org.joda.time.LocalDate;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -26,18 +30,20 @@ public class Sample extends AbstractVerticle {
 		final Router router = Router.router(vertx);
 
 		// Create a new get method listening on /hello resource with a parameter
-		router.route(HttpMethod.GET, "/hello/:name").handler(routingContext -> {
+		router.route(HttpMethod.GET, "/hello").handler(routingContext -> {
 			// Retrieving request and response objects
 			HttpServerRequest request = routingContext.request();
 			HttpServerResponse response = routingContext.response();
-
-			// Get the name parameter
-			String name = request.getParam("name");
-
+			
+			//Process parameters
+			MultiMap map =  request.params();
+			Period period = getAge(map);
+			
 			// Manage output response
 			response.putHeader("Content-Type", "text/plain");
 			response.setChunked(true);
-			response.write("Hello " + name);
+			response.write("Hello " + map.get("name"));
+			response.write("\nYou are now " + period.getYears() + " years " + period.getMonths() + " months and "+period.getDays()+" days old !");
 			response.setStatusCode(200);
 			response.end();
 		});
@@ -60,5 +66,19 @@ public class Sample extends AbstractVerticle {
 	public void stop(Future<Void> stopFuture) throws Exception {
 		// Do something
 		stopFuture.complete();
+	}
+	
+	Period getAge(MultiMap map)
+	{
+		// Get the name parameter
+		Integer year = Integer.parseInt(map.get("yyyy"));
+		Integer month = Integer.parseInt(map.get("mm"));
+		Integer day = Integer.parseInt(map.get("dd"));
+		LocalDate birthdate = new LocalDate (year, month, day);      //Birth date
+		LocalDate now = new LocalDate();                        //Today's date
+		Period period = new Period(birthdate, now, PeriodType.yearMonthDay());	 
+		//Now access the values as below
+		System.out.println(map.get("name")+": "+period.getYears()+" "+period.getMonths()+ " "+period.getDays());
+		return period;
 	}
 }
